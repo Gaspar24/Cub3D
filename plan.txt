@@ -1,0 +1,175 @@
+// includes/cub3d.h
+
+#ifndef CUB3D_H
+#define CUB3D_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include "minilibx-linux/mlx.h"
+
+typedef struct s_texture {
+    char *north;
+    char *south;
+    char *west;
+    char *east;
+    int floor_color;
+    int ceiling_color;
+} t_texture;
+
+typedef struct s_map {
+    char **map;
+    int width;
+    int height;
+} t_map;
+
+typedef struct s_game {
+    t_texture texture;
+    t_map map;
+    // Add more fields as needed
+} t_game;
+
+void parse_map(char *file, t_game *game);
+
+#endif
+Helper Functions
+Implement helper functions to handle file reading and string manipulation.
+
+c
+Copy code
+// srcs/utils.c
+
+#include "cub3d.h"
+
+char *read_file(const char *filename) {
+    int fd = open(filename, O_RDONLY);
+    if (fd < 0) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+    char buffer[1024];
+    char *content = malloc(1);
+    content[0] = '\0';
+    int bytes_read;
+    while ((bytes_read = read(fd, buffer, sizeof(buffer) - 1)) > 0) {
+        buffer[bytes_read] = '\0';
+        content = realloc(content, strlen(content) + bytes_read + 1);
+        strcat(content, buffer);
+    }
+    close(fd);
+    return content;
+}
+
+char **split_string(const char *str, char delimiter) {
+    char **result = malloc(sizeof(char *) * 100); // Adjust size as needed
+    int count = 0;
+    char *token;
+    char *str_copy = strdup(str);
+    while ((token = strsep(&str_copy, &delimiter)) != NULL) {
+        result[count++] = strdup(token);
+    }
+    result[count] = NULL;
+    free(str_copy);
+    return result;
+}
+
+int parse_color(const char *str) {
+    int r, g, b;
+    if (sscanf(str, "%d,%d,%d", &r, &g, &b) != 3) {
+        fprintf(stderr, "Error: Invalid color format\n");
+        exit(EXIT_FAILURE);
+    }
+    return (r << 16) | (g << 8) | b;
+}
+Parse the Map File
+Implement the main parsing function to handle the .cub file format.
+
+c
+Copy code
+// srcs/parse_map.c
+
+#include "cub3d.h"
+
+void parse_textures(char **lines, t_texture *texture) {
+    for (int i = 0; lines[i]; i++) {
+        if (strncmp(lines[i], "NO ", 3) == 0)
+            texture->north = strdup(lines[i] + 3);
+        else if (strncmp(lines[i], "SO ", 3) == 0)
+            texture->south = strdup(lines[i] + 3);
+        else if (strncmp(lines[i], "WE ", 3) == 0)
+            texture->west = strdup(lines[i] + 3);
+        else if (strncmp(lines[i], "EA ", 3) == 0)
+            texture->east = strdup(lines[i] + 3);
+        else if (strncmp(lines[i], "F ", 2) == 0)
+            texture->floor_color = parse_color(lines[i] + 2);
+        else if (strncmp(lines[i], "C ", 2) == 0)
+            texture->ceiling_color = parse_color(lines[i] + 2);
+    }
+}
+
+void parse_map_content(char **lines, t_map *map) {
+    int start = 0;
+    while (lines[start] && (lines[start][0] < '0' || lines[start][0] > '1'))
+        start++;
+    map->height = 0;
+    for (int i = start; lines[i]; i++, map->height++)
+        map->width = strlen(lines[i]) > map->width ? strlen(lines[i]) : map->width;
+    map->map = malloc(sizeof(char *) * (map->height + 1));
+    for (int i = 0; i < map->height; i++)
+        map->map[i] = strdup(lines[start + i]);
+    map->map[map->height] = NULL;
+}
+
+void parse_map(char *file, t_game *game) {
+    char *content = read_file(file);
+    char **lines = split_string(content, '\n');
+    parse_textures(lines, &game->texture);
+    parse_map_content(lines, &game->map);
+    free(content);
+    for (int i = 0; lines[i]; i++)
+        free(lines[i]);
+    free(lines);
+}
+Update Main Function
+Update your main.c to use the parsing function.
+
+c
+Copy code
+// srcs/main.c
+
+#include "cub3d.h"
+
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <map.cub>\n", argv[0]);
+        return 1;
+    }
+
+    t_game game;
+    memset(&game, 0, sizeof(t_game)); // Initialize game structure
+
+    parse_map(argv[1], &game);
+
+    // Initialize window and start the game loop
+    t_window win;
+    init_window(&win);
+    mlx_loop(win.mlx_ptr);
+
+    // Free allocated resources
+    free(game.texture.north);
+    free(game.texture.south);
+    free(game.texture.west);
+    free(game.texture.east);
+    for (int i = 0; game.map.map[i]; i++)
+        free(game.map.map[i]);
+    free(game.map.map);
+
+    return 0;
+}
+Summary
+Read and Split the File: Read the .cub file and split it into lines.
+Parse Textures and Colors: Identify and store texture paths and colors.
+Parse Map Content: Extract and store the map layout.
+Main Function: Update the main function to utilize the parsing functions and initialize the game.
