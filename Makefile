@@ -1,14 +1,11 @@
 
-
 NAME = cub3d.exe
 
 FLAGS = -Wall -Wextra -Werror
 
 MLX_DIR = minilibx-linux
 
-MLX_FLAGS = -L$(MLX_DIR) -L/usr/lib/x86_64-linux-gnu -lm -lbsd
-
-MLX_LIBS = -lmlx -lX11 -lXext
+LDFLAGS = -L$(MLX_DIR) -L/usr/lib/x86_64-linux-gnu/ -lX11 -lXext -lm -lbsd -lmlx
 
 MLX = minilibx-linux/libmlx.a
 
@@ -18,8 +15,8 @@ OBJ = $(SRC:.c=.o)
 
 all: $(NAME)
 
-$(NAME): $(OBJ) $(MLX)
-		cc $(OBJ) $(MLX) $(MLX_FLAGS) $(MLX_LIBS) $(FLAGS) -o $(NAME)
+$(NAME):  $(MLX) $(OBJ)
+		cc $(FLAGS) $(OBJ) $(MLX) $(LDFLAGS) -o $(NAME)
 		rm -rf $(OBJ)
 
 $(MLX):
@@ -32,3 +29,5 @@ fclean: clean
 	rm -f $(NAME)
 
 re: fclean all
+
+
