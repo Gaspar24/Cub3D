@@ -6,7 +6,7 @@
 /*   By: msacaliu <msacaliu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/30 14:10:39 by msacaliu          #+#    #+#             */
-/*   Updated: 2024/09/03 17:00:39 by msacaliu         ###   ########.fr       */
+/*   Updated: 2024/09/03 18:02:48 by msacaliu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,9 +57,11 @@ void	fill_map(int fd, char **map)
 
 	i[X] = 0;
 	i[Y] = 0;
-	n = read(fd, &buffer[i[Y]], 1);
+	n = read(fd, &buffer[i[Y]], 1); 
 	while (n > 0)
 	{
+        // while(buffer[i[0]] != '1')
+        //     i[Y]++;
 		if (buffer[i[Y]] == '\n' || i[Y] == MAX_LINE_LENGTH - 1)
 		{
 			buffer[i[Y]] = '\0';
