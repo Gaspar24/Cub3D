@@ -5,6 +5,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 # include <math.h>
 #include "../minilibx-linux/mlx.h"
 #include "../minilibx-linux/mlx_int.h"
@@ -74,5 +76,10 @@ typedef struct s_mlx	//the mlx structure
 }	t_mlx;
 
 
+
+char	**read_map(const char *filename);
+
+
+char	*ft_strjoin(char *s1, char *s2);
 
 #endif
