@@ -6,7 +6,7 @@
 /*   By: msacaliu <msacaliu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/30 14:10:46 by msacaliu          #+#    #+#             */
-/*   Updated: 2024/09/03 18:24:19 by msacaliu         ###   ########.fr       */
+/*   Updated: 2024/09/05 16:07:12 by msacaliu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,21 +30,13 @@
 void    startup(t_data *data, char *filename)
 {
     char *full_path = ft_strjoin("./sources/maps/", filename);
-    data->map2d = read_map(full_path);
-
-    // int i = 0;
-    // int j = 0;
-    // while(data->map2d[i])
-    // {
-    //     j = 0;
-    //     while (data->map2d[j])
-    //     {
-    //         printf("%c",data->map2d[i][j]);
-    //         j++;
-    //     }
-    //     printf("\n");
-    //     i++;
-    // }
+    data->map2d = read_map(full_path, data);
+    int i = 0;
+    while (data->map2d[i])
+    {
+        printf("%s",data->map2d[i++]);
+    }
+    
 }
 
 int main(int argc, char **argv)
