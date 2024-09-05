@@ -6,7 +6,7 @@
 /*   By: msacaliu <msacaliu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/30 14:10:39 by msacaliu          #+#    #+#             */
-/*   Updated: 2024/09/05 16:18:03 by msacaliu         ###   ########.fr       */
+/*   Updated: 2024/09/05 17:11:15 by msacaliu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,50 +85,98 @@ void	get_coordinates(int fd, t_data *data)
 	// 		printf("%s", buffer); // last row
 }
 
-
-char	**fill_map(int fd, char **map)
+char *skip_leading_spaces(char *str)
 {
-
-	char	buffer[MAX_LINE_LENGTH + 1];
-	int		i;
-	int		j;
-	ssize_t	n;
-
-	i = 0;
-	j = 0;
-	n = read(fd, &buffer[i], 1); 
-
-	while(n > 0)
-	{
-		if(buffer[i] == '\n' || i == MAX_LINE_LENGTH -1)
-		{
-			buffer[i + 1] = '\0';
-			if (buffer[0] == '1')
-			{
-				map[j] = ft_strcpy(map[j], buffer);
-				j++;
-			}
-                 // Print the buffer if it starts with '1'
-			i = 0;
-		}
-		else
-			i++;
-		n = read(fd, &buffer[i], 1);
-	}
-	if (i > 0)
-    {
-		buffer[i] = '\n';
-		buffer[i+1] = '\0';
-		if (buffer[0] == '1')
-		{
-			map[j] = ft_strcpy(map[j], buffer);
-			j++;
-		}
-	}
-	map[j] = NULL;
-	return(map);
+    while (*str == ' ' || *str == '\t')
+        str++;
+    return str;
 }
 
+// char	**fill_map(int fd, char **map) ///wrong , space can be before map walls/ nned a nother way
+// {
+
+// 	char	buffer[MAX_LINE_LENGTH + 1];
+// 	int		i;
+// 	int		j;
+// 	ssize_t	n;
+
+// 	i = 0;
+// 	j = 0;
+// 	n = read(fd, &buffer[i], 1); 
+// 	while(n > 0)
+// 	{
+// 		if(buffer[i] == '\n' || i == MAX_LINE_LENGTH -1)
+// 		{
+// 			buffer[i + 1] = '\0';
+// 			if (buffer[0] == '1')
+// 			{
+// 				map[j] = ft_strcpy(map[j], buffer);
+// 				j++;
+// 			}
+//                  // Print the buffer if it starts with '1'
+// 			i = 0;
+// 		}
+// 		else
+// 			i++;
+// 		n = read(fd, &buffer[i], 1);
+// 	}
+// 	if (i > 0)
+//     {
+// 		buffer[i] = '\n';
+// 		buffer[i+1] = '\0';
+// 		if (buffer[0] == '1')
+// 		{
+// 			map[j] = ft_strcpy(map[j], buffer);
+// 			j++;
+// 		}
+// 	}
+// 	map[j] = NULL;
+// 	return(map);
+// }
+
+char **fill_map(int fd, char **map)
+{
+    char buffer[MAX_LINE_LENGTH + 1];
+    int i = 0;
+    int j = 0;
+    ssize_t n;
+    int map_started = 0;
+
+    while ((n = read(fd, &buffer[i], 1)) > 0)
+    {
+        if (buffer[i] == '\n' || i == MAX_LINE_LENGTH - 1)
+        {
+            buffer[i + 1] = '\0'; // Null-terminate the string
+            char *trimmed_line = skip_leading_spaces(buffer);
+            // Check if the map has started
+            if (map_started || trimmed_line[0] == '1')
+            {
+                map_started = 1;
+                map[j] = strdup(buffer); // Copy the buffer to the map
+                j++;
+            }
+
+            i = 0; // Reset the index
+        }
+        else
+        {
+            i++;
+        }
+    }
+    if (i > 0)
+    {
+        buffer[i] = '\0';
+        char *trimmed_line = skip_leading_spaces(buffer);
+        if (map_started || trimmed_line[0] == '1')
+        {
+            map[j] = strdup(buffer);
+            j++;
+        }
+    }
+
+    map[j] = NULL; // Null-terminate the map array
+    return map;
+}
 
 
 

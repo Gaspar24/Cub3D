@@ -59,6 +59,7 @@ typedef struct s_data	//the data structure
 	int		h_map;	// map height
 	/// c -color
 	/// f -color
+	void	*wall;
 
 }	t_data;
 
