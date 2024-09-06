@@ -60,6 +60,7 @@ typedef struct s_data	//the data structure
 	/// c -color
 	/// f -color
 	void	*wall;
+	void	*floor;
 
 }	t_data;
 

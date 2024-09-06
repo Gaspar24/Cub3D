@@ -6,7 +6,7 @@
 /*   By: msacaliu <msacaliu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/30 14:10:46 by msacaliu          #+#    #+#             */
-/*   Updated: 2024/09/05 17:02:25 by msacaliu         ###   ########.fr       */
+/*   Updated: 2024/09/06 12:46:54 by msacaliu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,9 +30,39 @@
 void    startup(t_data *data, char *filename)
 {
     char *full_path = ft_strjoin("./sources/maps/", filename);
+	full_path = ft_strjoin(full_path, ".cub");
     data->map2d = read_map(full_path, data);
     int i = 0;
     
+}
+
+void	draw_floor(t_data *data, int img_width, int img_height, t_mlx *mlx) //test
+{
+	int	x;
+	int	y;
+	int	i;
+	int	j;
+
+	x = 0;
+	y = 0;
+	data->floor = mlx_xpm_file_to_image(mlx->mlx_p,
+			"./sources/textures/floor.xpm", &img_width, &img_height);
+	i = 0;
+	while (data->map2d[i] != NULL)
+	{
+		j = 0;
+		while (data->map2d[i][j] != '\0')
+		{
+			if (data->map2d[i][j] == '0')
+				mlx_put_image_to_window(mlx->mlx_p,
+					mlx->window, data->floor, x, y);
+			x += img_width;
+			j++;
+		}
+		y += img_height;
+		x = 0;
+		i++;
+	}
 }
 
 void	draw_wall(t_data *data, int img_width, int img_height, t_mlx *mlx) //test
@@ -46,8 +76,6 @@ void	draw_wall(t_data *data, int img_width, int img_height, t_mlx *mlx) //test
 	y = 0;
 	data->wall = mlx_xpm_file_to_image(mlx->mlx_p,
 			"./sources/textures/wall.xpm", &img_width, &img_height);
-    if(data->wall == NULL)
-        printf("NULL\n");
 	i = 0;
 	while (data->map2d[i] != NULL)
 	{
@@ -86,6 +114,8 @@ int main(int argc, char **argv)
     // mlx.img = mlx_xpm_file_to_image(mlx.mlx_p,"./sources/textures/floor.xpm", &img_height, &img_height);
     // mlx_put_image_to_window(mlx.mlx_p,mlx.window, mlx.img, 150,150);
     draw_wall(&data, 50,50,&mlx);
+    draw_floor(&data, 50,50,&mlx);
+
     // if(mlx.img==NULL)
     //     exit(1);
     mlx_loop(mlx.mlx_p);

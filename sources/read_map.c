@@ -6,7 +6,7 @@
 /*   By: msacaliu <msacaliu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/30 14:10:39 by msacaliu          #+#    #+#             */
-/*   Updated: 2024/09/05 17:11:15 by msacaliu         ###   ########.fr       */
+/*   Updated: 2024/09/06 12:51:24 by msacaliu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,47 +92,6 @@ char *skip_leading_spaces(char *str)
     return str;
 }
 
-// char	**fill_map(int fd, char **map) ///wrong , space can be before map walls/ nned a nother way
-// {
-
-// 	char	buffer[MAX_LINE_LENGTH + 1];
-// 	int		i;
-// 	int		j;
-// 	ssize_t	n;
-
-// 	i = 0;
-// 	j = 0;
-// 	n = read(fd, &buffer[i], 1); 
-// 	while(n > 0)
-// 	{
-// 		if(buffer[i] == '\n' || i == MAX_LINE_LENGTH -1)
-// 		{
-// 			buffer[i + 1] = '\0';
-// 			if (buffer[0] == '1')
-// 			{
-// 				map[j] = ft_strcpy(map[j], buffer);
-// 				j++;
-// 			}
-//                  // Print the buffer if it starts with '1'
-// 			i = 0;
-// 		}
-// 		else
-// 			i++;
-// 		n = read(fd, &buffer[i], 1);
-// 	}
-// 	if (i > 0)
-//     {
-// 		buffer[i] = '\n';
-// 		buffer[i+1] = '\0';
-// 		if (buffer[0] == '1')
-// 		{
-// 			map[j] = ft_strcpy(map[j], buffer);
-// 			j++;
-// 		}
-// 	}
-// 	map[j] = NULL;
-// 	return(map);
-// }
 
 char **fill_map(int fd, char **map)
 {
