@@ -6,7 +6,7 @@
 /*   By: msacaliu <msacaliu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/30 14:10:46 by msacaliu          #+#    #+#             */
-/*   Updated: 2024/09/09 14:41:30 by msacaliu         ###   ########.fr       */
+/*   Updated: 2024/09/09 15:35:59 by msacaliu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,8 +67,8 @@ int main(int argc, char **argv)
         exit(1);
     }
     startup(&data, argv[1]);
-	
-
+	printf("test\n");
+	printf("%s\n",data.NO);
     mlx.mlx_p = mlx_init();
     mlx.window = mlx_new_window(mlx.mlx_p,1920,1080,"Maze Runner");
 	mlx_key_hook(mlx.window, handle_input, &mlx);

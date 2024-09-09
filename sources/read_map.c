@@ -6,7 +6,7 @@
 /*   By: msacaliu <msacaliu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/30 14:10:39 by msacaliu          #+#    #+#             */
-/*   Updated: 2024/09/09 13:53:01 by msacaliu         ###   ########.fr       */
+/*   Updated: 2024/09/09 15:37:17 by msacaliu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,7 +140,7 @@ char **fill_map(int fd, char **map)
 
 
 
-char	**read_map(const char *filename, t_data *data)
+char	**read_map(const char *filename, t_data *data) //nned to modify to get the coordinates NO,SO...
 {
 	int		fd;
 	// char	**map;
