@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <math.h>
 #include "../minilibx-linux/mlx.h"
 #include "../minilibx-linux/mlx_int.h"
@@ -21,30 +20,30 @@
 # define SIZE 50
 
 
-// # define S_W 1900 // screen width
-// # define S_H 1000 // screen height
-// # define TILE_SIZE 30 // tile size
-// # define FOV 60 // field of view
-// # define ROTATION_SPEED 0.045 // rotation speed
-// # define PLAYER_SPEED 4	// player speed
+# define S_W 1920 // screen width
+# define S_H 1080 // screen height
+# define TILE_SIZE 30 // tile size
+# define FOV 60 // field of view
+# define ROTATION_SPEED 0.045 // rotation speed
+# define PLAYER_SPEED 4	// player speed
 
-// typedef struct s_player //the player structure
-// {
-// 	int		plyr_x; // player x position in pixels
-// 	int		plyr_y; // player y position in pixels
-// 	double	angle;	// player angle
-// 	float	fov_rd;	// field of view in radians
-// 	int		rot;	// rotation flag
-// 	int		l_r;	// left right flag
-// 	int		u_d;	// up down flag
-// }	t_player;
+typedef struct s_player //the player structure
+{
+	int		plyr_x; // player x position in pixels
+	int		plyr_y; // player y position in pixels
+	double	angle;	// player angle
+	float	fov_rd;	// field of view in radians
+	int		rot;	// rotation flag
+	int		l_r;	// left right flag
+	int		u_d;	// up down flag
+}	t_player;
 
-// typedef struct s_ray	//the ray structure
-// {
-// 	double	ray_ngl;	// ray angle
-// 	double	distance;	// distance to the wall
-// 	int		flag;		// flag for the wall
-// }	t_ray;
+typedef struct s_ray	//the ray structure
+{
+	double	ray_ngl;	// ray angle
+	double	distance;	// distance to the wall
+	int		flag;		// flag for the wall
+}	t_ray;
 
 typedef struct s_data	//the data structure
 {
@@ -84,6 +83,15 @@ char	**read_map(const char *filename, t_data *data);
 //-----------------utils---------------------
 char	*ft_strjoin(char *s1, char *s2);
 char	*ft_strcpy(char *dest, char *src);
+
+//----------put_texture-------
+void	draw_wall(t_data *data, int img_width, int img_height, t_mlx *mlx);
+void	draw_floor(t_data *data, int img_width, int img_height, t_mlx *mlx);
+
+//----------actions-------------
+int		handle_input(int keysym, t_mlx *mlx);
+void	close_window(t_mlx *mlx);
+
 
 
 #endif
