@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <stdbool.h>
 #include "../minilibx-linux/mlx.h"
 #include "../minilibx-linux/mlx_int.h"
 
@@ -76,9 +77,23 @@ typedef struct s_mlx	//the mlx structure
 	// t_player		*ply;	// the player structure
 }	t_mlx;
 
+/////////////test
+// typedef struct s_mlx {
+//     void    *mlx_p;
+//     void    *window;
+//     struct {
+//         void *img;
+//         char *addr;
+//         int bits_per_pixel;
+//         int line_length;
+//         int endian;
+//     } img;
+// } t_mlx;
+
 
 //----------------read_map------------------
 char	**read_map(const char *filename, t_data *data);
+
 
 //-----------------utils---------------------
 char	*ft_strjoin(char *s1, char *s2);
