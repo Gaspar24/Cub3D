@@ -9,7 +9,7 @@ LDFLAGS = -L$(MLX_DIR) -L/usr/lib/x86_64-linux-gnu/ -lX11 -lXext -lm -lbsd -lmlx
 MLX = minilibx-linux/libmlx.a
 
 SRC = sources/main.c sources/read_map.c sources/utils.c sources/put_texture.c \
-	sources/actions.c
+	sources/actions.c sources/raycasting.c
 
 OBJ = $(SRC:.c=.o)
 # GET_NEXT_LINE = lib/get_next_line/a.out

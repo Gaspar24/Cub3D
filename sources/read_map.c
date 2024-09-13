@@ -6,7 +6,7 @@
 /*   By: msacaliu <msacaliu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/30 14:10:39 by msacaliu          #+#    #+#             */
-/*   Updated: 2024/09/10 11:36:08 by msacaliu         ###   ########.fr       */
+/*   Updated: 2024/09/12 15:01:06 by msacaliu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,8 +81,6 @@ void	get_coordinates(int fd, t_data *data)
 			i++;
 		n = read(fd, &buffer[i], 1);
 	}
-	// if(i > 0)
-	// 		printf("%s", buffer); // last row
 }
 
 char *skip_leading_spaces(char *str)
@@ -133,7 +131,6 @@ char **fill_map(int fd, char **map)
             j++;
         }
     }
-
     map[j] = NULL; // Null-terminate the map array
     return map;
 }

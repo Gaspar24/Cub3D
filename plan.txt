@@ -1,616 +1,565 @@
-// includes/cub3d.h
-
-#ifndef CUB3D_H
-#define CUB3D_H
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include "minilibx-linux/mlx.h"
-
-typedef struct s_texture {
-    char *north;
-    char *south;
-    char *west;
-    char *east;
-    int floor_color;
-    int ceiling_color;
-} t_texture;
-
-typedef struct s_map {
-    char **map;
-    int width;
-    int height;
-} t_map;
-
-typedef struct s_game {
-    t_texture texture;
-    t_map map;
-    // Add more fields as needed
-} t_game;
-
-void parse_map(char *file, t_game *game);
-
-#endif
-Helper Functions
-Implement helper functions to handle file reading and string manipulation.
-
-c
-Copy code
-// srcs/utils.c
-
-#include "cub3d.h"
-
-char *read_file(const char *filename) {
-    int fd = open(filename, O_RDONLY);
-    if (fd < 0) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-    char buffer[1024];
-    char *content = malloc(1);
-    content[0] = '\0';
-    int bytes_read;
-    while ((bytes_read = read(fd, buffer, sizeof(buffer) - 1)) > 0) {
-        buffer[bytes_read] = '\0';
-        content = realloc(content, strlen(content) + bytes_read + 1);
-        strcat(content, buffer);
-    }
-    close(fd);
-    return content;
-}
-
-char **split_string(const char *str, char delimiter) {
-    char **result = malloc(sizeof(char *) * 100); // Adjust size as needed
-    int count = 0;
-    char *token;
-    char *str_copy = strdup(str);
-    while ((token = strsep(&str_copy, &delimiter)) != NULL) {
-        result[count++] = strdup(token);
-    }
-    result[count] = NULL;
-    free(str_copy);
-    return result;
-}
-
-int parse_color(const char *str) {
-    int r, g, b;
-    if (sscanf(str, "%d,%d,%d", &r, &g, &b) != 3) {
-        fprintf(stderr, "Error: Invalid color format\n");
-        exit(EXIT_FAILURE);
-    }
-    return (r << 16) | (g << 8) | b;
-}
-Parse the Map File
-Implement the main parsing function to handle the .cub file format.
-
-c
-Copy code
-// srcs/parse_map.c
-
-#include "cub3d.h"
-
-void parse_textures(char **lines, t_texture *texture) {
-    for (int i = 0; lines[i]; i++) {
-        if (strncmp(lines[i], "NO ", 3) == 0)
-            texture->north = strdup(lines[i] + 3);
-        else if (strncmp(lines[i], "SO ", 3) == 0)
-            texture->south = strdup(lines[i] + 3);
-        else if (strncmp(lines[i], "WE ", 3) == 0)
-            texture->west = strdup(lines[i] + 3);
-        else if (strncmp(lines[i], "EA ", 3) == 0)
-            texture->east = strdup(lines[i] + 3);
-        else if (strncmp(lines[i], "F ", 2) == 0)
-            texture->floor_color = parse_color(lines[i] + 2);
-        else if (strncmp(lines[i], "C ", 2) == 0)
-            texture->ceiling_color = parse_color(lines[i] + 2);
-    }
-}
-
-void parse_map_content(char **lines, t_map *map) {
-    int start = 0;
-    while (lines[start] && (lines[start][0] < '0' || lines[start][0] > '1'))
-        start++;
-    map->height = 0;
-    for (int i = start; lines[i]; i++, map->height++)
-        map->width = strlen(lines[i]) > map->width ? strlen(lines[i]) : map->width;
-    map->map = malloc(sizeof(char *) * (map->height + 1));
-    for (int i = 0; i < map->height; i++)
-        map->map[i] = strdup(lines[start + i]);
-    map->map[map->height] = NULL;
-}
-
-void parse_map(char *file, t_game *game) {
-    char *content = read_file(file);
-    char **lines = split_string(content, '\n');
-    parse_textures(lines, &game->texture);
-    parse_map_content(lines, &game->map);
-    free(content);
-    for (int i = 0; lines[i]; i++)
-        free(lines[i]);
-    free(lines);
-}
-Update Main Function
-Update your main.c to use the parsing function.
-
-c
-Copy code
-// srcs/main.c
-
-#include "cub3d.h"
-
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <map.cub>\n", argv[0]);
-        return 1;
-    }
-
-    t_game game;
-    memset(&game, 0, sizeof(t_game)); // Initialize game structure
-
-    parse_map(argv[1], &game);
-
-    // Initialize window and start the game loop
-    t_window win;
-    init_window(&win);
-    mlx_loop(win.mlx_ptr);
-
-    // Free allocated resources
-    free(game.texture.north);
-    free(game.texture.south);
-    free(game.texture.west);
-    free(game.texture.east);
-    for (int i = 0; game.map.map[i]; i++)
-        free(game.map.map[i]);
-    free(game.map.map);
-
-    return 0;
-}
-Summary
-Read and Split the File: Read the .cub file and split it into lines.
-Parse Textures and Colors: Identify and store texture paths and colors.
-Parse Map Content: Extract and store the map layout.
-Main Function: Update the main function to utilize the parsing functions and initialize the game.
-
-
-------------------------------------------------------------------------------------
-
-
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-
-typedef struct s_config {
-    char *north_texture;
-    char *south_texture;
-    char *west_texture;
-    char *east_texture;
-    int floor_color[3];
-    int ceiling_color[3];
-} t_config;
-
-// 2. Utility Functions
-
-// Implement basic utility functions to help with parsing:
-
-//     String Comparison and Copying: Implement your own versions of strncmp and strdup since you can't use them directly.
-
-// c
-
-int ft_strncmp(const char *s1, const char *s2, size_t n) {
-    while (n && *s1 && (*s1 == *s2)) {
-        s1++;
-        s2++;
-        n--;
-    }
-    if (n == 0) return 0;
-    return *(unsigned char *)s1 - *(unsigned char *)s2;
-}
-
-char *ft_strdup(const char *s1) {
-    size_t len = 0;
-    while (s1[len])
-        len++;
-    char *copy = malloc(len + 1);
-    if (!copy)
-        return NULL;
-    for (size_t i = 0; i < len; i++)
-        copy[i] = s1[i];
-    copy[len] = '\0';
-    return copy;
-}
-
-void exit_with_error(const char *message) {
-    write(2, "Error\n", 6);
-    write(2, message, strlen(message));
-    write(2, "\n", 1);
-    exit(EXIT_FAILURE);
-}
-
-//     Parsing RGB Colors: Implement a function to parse RGB values from a string:
-
-// c
-
-void parse_rgb(const char *line, int *color) {
-    int i = 0, value = 0, count = 0;
-
-    while (line[i]) {
-        if (line[i] >= '0' && line[i] <= '9') {
-            value = value * 10 + (line[i] - '0');
-        } else if (line[i] == ',' || line[i] == '\0') {
-            if (count < 3) {
-                color[count++] = value;
-                value = 0;
-            }
-            if (line[i] == '\0')
-                break;
-        } else {
-            exit_with_error("Invalid RGB format");
-        }
-        i++;
-    }
-    if (count != 3)
-        exit_with_error("Incomplete RGB color value");
-    for (i = 0; i < 3; i++) {
-        if (color[i] < 0 || color[i] > 255)
-            exit_with_error("RGB value out of range");
-    }
-}
-
-// 3. Parsing Configuration
-
-// Implement a function to read and parse the configuration data from the file:
-
-// c
-
-void parse_line(char *line, t_config *config) {
-    if (ft_strncmp(line, "NO ", 3) == 0) {
-        config->north_texture = ft_strdup(line + 3);
-    } else if (ft_strncmp(line, "SO ", 3) == 0) {
-        config->south_texture = ft_strdup(line + 3);
-    } else if (ft_strncmp(line, "WE ", 3) == 0) {
-        config->west_texture = ft_strdup(line + 3);
-    } else if (ft_strncmp(line, "EA ", 3) == 0) {
-        config->east_texture = ft_strdup(line + 3);
-    } else if (ft_strncmp(line, "F ", 2) == 0) {
-        parse_rgb(line + 2, config->floor_color);
-    } else if (ft_strncmp(line, "C ", 2) == 0) {
-        parse_rgb(line + 2, config->ceiling_color);
-    } else if (line[0] == '1') {
-        // This marks the beginning of the map, stop parsing config
-        return;
-    } else {
-        exit_with_error("Invalid configuration line");
-    }
-}
-
-// 4. Main Function for Reading the File
-
-// Since we cannot use fgets, we'll read the file using read in chunks and parse it line by line:
-
-// c
-
-#define BUFFER_SIZE 4096
-
-void read_file(const char *filename, t_config *config) {
-    int fd = open(filename, O_RDONLY);
-    if (fd < 0) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-
-    char buffer[BUFFER_SIZE];
-    int bytes_read;
-    char line[256];
-    int line_len = 0;
-
-    while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0) {
-        for (int i = 0; i < bytes_read; i++) {
-            if (buffer[i] == '\n') {
-                line[line_len] = '\0';
-                parse_line(line, config);
-                line_len = 0;
-            } else {
-                line[line_len++] = buffer[i];
-            }
-        }
-    }
-
-    if (bytes_read < 0) {
-        perror("Error reading file");
-        close(fd);
-        exit(EXIT_FAILURE);
-    }
-
-    close(fd);
-}
-
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        write(2, "Usage: ./parser <path_to_cub_file>\n", 35);
-        return EXIT_FAILURE;
-    }
-
-    t_config config = {0}; // Initialize the config structure
-
-    read_file(argv[1], &config);
-
-    // Print parsed information (for testing)
-    printf("North Texture: %s\n", config.north_texture);
-    printf("South Texture: %s\n", config.south_texture);
-    printf("West Texture: %s\n", config.west_texture);
-    printf("East Texture: %s\n", config.east_texture);
-    printf("Floor Color: %d,%d,%d\n", config.floor_color[0], config.floor_color[1], config.floor_color[2]);
-    printf("Ceiling Color: %d,%d,%d\n", config.ceiling_color[0], config.ceiling_color[1], config.ceiling_color[2]);
-
-    // Free allocated memory
-    free(config.north_texture);
-    free(config.south_texture);
-    free(config.west_texture);
-    free(config.east_texture);
-
-    return 0;
-}
-
-
----------------------------------------------------------------------------------
-
-Project Plan for cub3D:
-
-Creating a "realistic" 3D graphical representation using ray-casting is a challenging but exciting project. Below is a structured plan to help you tackle this project, including steps for setting up the project, parsing the map, and integrating the MiniLibX library.
-1. Project Setup
-
-Directory Structure:
-
-bash
-
-cub3D/
-├── Makefile
-├── src/
-│   ├── main.c
-│   ├── init.c
-│   ├── render.c
-│   ├── raycasting.c
-│   ├── input_handling.c
-│   ├── map_parsing.c
-│   ├── texture_loading.c
-│   ├── utils.c
-├── include/
-│   ├── cub3d.h
-│   ├── mlx.h
-│   ├── keys.h
-├── assets/
-│   ├── north_texture.xpm
-│   ├── south_texture.xpm
-│   ├── east_texture.xpm
-│   ├── west_texture.xpm
-├── maps/
-│   ├── example.cub
-└── libft/
-    └── [Libft files]
-
-2. Makefile
-
-Your Makefile should handle the following:
-
-    all: Compile the project
-    clean: Remove object files
-    fclean: Remove all compiled files, including the executable
-    re: Clean and rebuild the project
-    bonus: Build any bonus features (if implemented)
-
-Example Makefile:
-
-Makefile
-
-NAME = cub3D
-CC = gcc
-CFLAGS = -Wall -Wextra -Werror -Iinclude -Ilibft -I/usr/include
-LIBFT = libft/libft.a
-MLX = -lmlx -framework OpenGL -framework AppKit
-
-SRCS = src/main.c src/init.c src/render.c src/raycasting.c src/input_handling.c \
-       src/map_parsing.c src/texture_loading.c src/utils.c
-OBJS = $(SRCS:.c=.o)
-
-all: $(NAME)
-
-$(NAME): $(OBJS) $(LIBFT)
-	$(CC) $(CFLAGS) $(OBJS) $(LIBFT) $(MLX) -o $(NAME)
-
-$(LIBFT):
-	make -C libft
-
-clean:
-	rm -f $(OBJS)
-	make clean -C libft
-
-fclean: clean
-	rm -f $(NAME)
-	make fclean -C libft
-
-re: fclean all
-
-bonus:
-	# Add bonus compilation rules here if needed
-
-.PHONY: all clean fclean re bonus
-
-3. Understanding Ray-Casting
-
-Ray-casting is the core technique you'll use to render a 3D perspective from a 2D map. The idea is to cast rays from the player's point of view, detect the distance to the nearest wall, and render vertical lines accordingly.
-
-Key Concepts:
-
-    Ray Direction: Determine the direction each ray is cast.
-    Wall Collision Detection: Detect where the ray hits a wall.
-    Projection: Convert the 3D distance to 2D screen height for walls.
-    Texturing: Apply wall textures based on the side the ray hits.
-
-4. Parsing the .cub File
-
-You'll need to create a parser that can read and interpret the .cub file format.
-
-Steps to Parse the Map:
-
-    File Reading:
-        Open the file and read its contents line by line.
-        Use the get_next_line function from your libft to handle the reading.
-
-    Parsing Identifiers:
-        Identify and store paths for textures (NO, SO, WE, EA).
-        Parse and store floor (F) and ceiling (C) colors.
-
-    Parsing the Map:
-        The map should only contain characters 0, 1, N, S, E, W.
-        Validate that the map is closed/surrounded by walls (1).
-        Store the map in a 2D array or a suitable data structure.
-
-    Error Handling:
-        If there are issues (e.g., the map is not closed or invalid characters), print Error\n followed by a descriptive error message and exit.
-
-Example map_parsing.c:
+
+// ---------------------------tutorial test--------------------
+
+// ----------Global vars---------
+
+
+// int map_width = 16;
+// int map_height = 16;
+// char map[16][16] = {
+//     "1111111111111111",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1000000000000001",
+//     "1111111111111111"
+// };
+
+// float fPlayerX = 8.0f; // Start position in the middle of the map
+// float fPlayerY = 8.0f; // Start position in the middle of the map
+// float fPlayerA = 0.0f; // Initial view angle
+// int screen_width = 1280;
+// int screen_height = 720;
+
+// float fov = 3.14159f / 4.0f;
+// float depth = 16.0f;
+
+// // Movement parameters
+// int key_states[256] = {0}; // Array to track which keys are pressed
+
+// // typedef struct s_mlx {
+// //     void    *mlx_p;
+// //     void    *window;
+// //     struct {
+// //         void *img;
+// //         char *addr;
+// //         int bits_per_pixel;
+// //         int line_length;
+// //         int endian;
+// //     } img;
+// // } t_mlx;
+
+// // Function to track key press events
+// int key_press(int keycode, t_mlx *mlx) {
+//     key_states[keycode] = 1; // Set key as pressed
+//     return 0;
+// }
+
+// // Function to track key release events
+// int key_release(int keycode, t_mlx *mlx) {
+//     key_states[keycode] = 0; // Set key as released
+//     return 0;
+// }
+
+// // Function to update player movement based on pressed keys
+// void update_player_movement() {
+//     float move_speed = 0.1f;
+//     float rotate_speed = 0.1f;
+
+//     if (key_states[13]) { // W: Move forward
+//         fPlayerX += cosf(fPlayerA) * move_speed;
+//         fPlayerY += sinf(fPlayerA) * move_speed;
+//     }
+//     if (key_states[1]) { // S: Move backward
+//         fPlayerX -= cosf(fPlayerA) * move_speed;
+//         fPlayerY -= sinf(fPlayerA) * move_speed;
+//     }
+//     if (key_states[0]) { // A: Strafe left
+//         fPlayerX += cosf(fPlayerA - 3.14159f / 2) * move_speed;
+//         fPlayerY += sinf(fPlayerA - 3.14159f / 2) * move_speed;
+//     }
+//     if (key_states[2]) { // D: Strafe right
+//         fPlayerX += cosf(fPlayerA + 3.14159f / 2) * move_speed;
+//         fPlayerY += sinf(fPlayerA + 3.14159f / 2) * move_speed;
+//     }
+//     if (key_states[123]) { // Left arrow: Rotate left
+//         fPlayerA -= rotate_speed;
+//     }
+//     if (key_states[124]) { // Right arrow: Rotate right
+//         fPlayerA += rotate_speed;
+//     }
+// }
+
+// // Helper function to put pixel
+// void my_mlx_pixel_put(t_mlx *mlx, int x, int y, int color) {
+//     char *dst;
+//     dst = mlx->img.addr + (y * mlx->img.line_length + x * (mlx->img.bits_per_pixel / 8));
+//     *(unsigned int *)dst = color;
+// }
+
+// // Game loop function
+// void game_loop(t_data *data, t_mlx *mlx) {
+//     // Initialize mlx and create window first
+//     mlx->mlx_p = mlx_init();
+//     mlx->window = mlx_new_window(mlx->mlx_p, screen_width, screen_height, "Maze Runner");
+
+//     // Create image after initializing mlx
+//     mlx->img.img = mlx_new_image(mlx->mlx_p, screen_width, screen_height);
+//     mlx->img.addr = mlx_get_data_addr(mlx->img.img, &mlx->img.bits_per_pixel, &mlx->img.line_length, &mlx->img.endian);
+
+//     // Hook for key press and release
+//     mlx_hook(mlx->window, 2, 1L<<0, key_press, mlx);    // Key press
+//     mlx_hook(mlx->window, 3, 1L<<1, key_release, mlx);  // Key release
+
+//     // Main rendering loop
+//     while (1) {
+//         // Update player movement based on keys pressed
+//         update_player_movement();
+
+//         // Clear the image by re-rendering the scene
+//         for (int x = 0; x < screen_width; x++) {
+//             // Calculate the ray angle
+//             float ray_angle = (fPlayerA - fov / 2.0f) + ((float)x / (float)screen_width) * fov;
+//             float distance_to_wall = 0;
+//             bool hit_wall = false;
+
+//             // Ray unit vector
+//             float EyeX = sinf(ray_angle);
+//             float EyeY = cosf(ray_angle);
+
+//             // Raycasting: check for wall hit
+//             while (!hit_wall && distance_to_wall < depth) {
+//                 distance_to_wall += 0.1f;
+//                 int testX = (int)(fPlayerX + EyeX * distance_to_wall);
+//                 int testY = (int)(fPlayerY + EyeY * distance_to_wall);
+
+//                 // Test if ray is out of bounds
+//                 if (testX < 0 || testX >= map_width || testY < 0 || testY >= map_height) {
+//                     hit_wall = true;
+//                     distance_to_wall = depth;
+//                 } else {
+//                     // Ray is in bounds, check for a wall
+//                     if (map[testY][testX] == '1') {
+//                         hit_wall = true;
+//                     }
+//                 }
+//             }
+
+//             // Calculate the ceiling and floor positions
+//             int ceiling = (int)(screen_height / 2.0f - screen_height / (float)distance_to_wall);
+//             int floor = screen_height - ceiling;
+
+//             // Draw the vertical slice (ceiling, wall, and floor)
+//             for (int y = 0; y < screen_height; y++) {
+//                 if (y < ceiling) {
+//                     my_mlx_pixel_put(mlx, x, y, 0x87CEEB); // Ceiling color (light blue)
+//                 } else if (y > ceiling && y <= floor) {
+//                     // Ensure shading does not go out of bounds
+//                     float shade = 1.0f - (distance_to_wall / depth); // Darken based on distance
+//                     shade = fmaxf(0.0f, fminf(1.0f, shade)); // Clamp between 0 and 1
+//                     int wall_color = (int)(shade * 255);
+//                     my_mlx_pixel_put(mlx, x, y, (wall_color << 16) | (wall_color << 8) | wall_color); // Grayscale wall
+//                 } else {
+//                     my_mlx_pixel_put(mlx, x, y, 0x008000); // Floor color (green)
+//                 }
+//             }
+//         }
+
+//         // After rendering all the columns, put the image to the window
+//         mlx_put_image_to_window(mlx->mlx_p, mlx->window, mlx->img.img, 0, 0);
+//     }
+
+//     // Start the mlx loop to handle input, etc.
+//     mlx_loop(mlx->mlx_p);
+// }
+
+// int main(int argc, char **argv) {
+//     t_mlx mlx;
+//     t_data data;
+
+//     // Start the game loop
+//     game_loop(&data, &mlx);
+//     return 0;
+// }
+
+
+
+-------------------------gpt plan------------------
+
+
+Plan for Implementing cub3D
+
+In this project, you are building a basic 3D maze using raycasting and the MiniLibX library to create a first-person view of the maze. Below is a step-by-step plan to guide you through the implementation, starting with your current code and expanding it to meet the project requirements.
+1. Understanding the Core Components
+
+The project can be divided into the following major components:
+
+    Map Loading and Parsing: You already have a map loader, which is good. We'll enhance it to handle textures and colors properly.
+    Raycasting: This is the heart of the project. The raycasting algorithm will simulate the 3D effect by casting rays and detecting wall intersections.
+    Rendering: Once rays are cast, the results will be used to draw walls and textures based on the distance to the walls.
+    Player Movement and Controls: You already have placeholders for handling inputs, but this will be expanded for full WASD movement and rotations.
+    Error Handling and Edge Cases: Ensure error cases like incorrect file formatting or invalid maps are handled gracefully.
+
+2. Plan Breakdown
+I. Map Parsing and Setup
+
+    Objective: Parse the .cub file and extract wall textures, floor/ceiling colors, and map layout.
+
+Already Implemented:
+
+    Reading the map and storing it as a 2D array (map2d).
+    Handling some basic texture paths (NO, SO, WE, EA).
+
+Next Steps:
+
+    Parse and validate floor (F) and ceiling (C) colors. Store them as RGB values.
+    Validate the map: ensure it's closed and surrounded by walls (1).
+    Store player’s starting position and orientation from the map (N, S, E, W).
 
 c
 
-#include "cub3d.h"
+typedef struct s_color {
+    int r;
+    int g;
+    int b;
+} t_color;
 
-void parse_map(char *file_path, t_game *game)
-{
-    int fd;
-    char *line;
+typedef struct s_data {
+    char    **map2d; // Already present
+    char    *NO, *SO, *WE, *EA; // Texture paths (Already present)
+    t_color floor_color;
+    t_color ceiling_color;
+    int     player_x, player_y;
+    char    player_orientation;
+} t_data;
 
-    fd = open(file_path, O_RDONLY);
-    if (fd < 0)
-        exit_with_error("Error\nFailed to open map file.");
+Action:
 
-    while (get_next_line(fd, &line) > 0)
-    {
-        // Parse each line based on its identifier (NO, SO, WE, EA, F, C, or map data)
-        // For example:
-        if (ft_strncmp(line, "NO", 2) == 0)
-            game->textures[NO] = parse_texture(line);
-        else if (ft_strncmp(line, "F", 1) == 0)
-            game->floor_color = parse_color(line);
-        else if (ft_isdigit(line[0]))
-            parse_map_line(line, game);
-        free(line);
-    }
-    close(fd);
-}
+    Finish parsing floor and ceiling colors, then validate map boundaries.
 
-5. Initializing the Game (init.c)
+II. Raycasting
 
-Before you start rendering, you need to initialize various components of your game, such as loading textures, setting up the initial player position, and configuring the MiniLibX window.
+    Objective: Implement raycasting to create the first-person 3D effect.
 
-Example init.c:
+Raycasting is the core algorithm. It casts rays from the player's position to detect walls and calculates the distance for each ray. The basic raycasting formula is:
+
+    Cast a ray for each vertical slice of the screen (from the player's POV).
+    Detect wall hits by checking intersections with the map grid.
+    Calculate distance from player to the wall and determine how high to draw each wall slice.
+    Apply textures to the walls based on the direction (north, south, east, west).
+
+Key Equations:
+
+    rayDirX = cos(player.angle)
+    rayDirY = sin(player.angle)
+    rayStepX and rayStepY determine how far the ray moves on each axis.
 
 c
 
-#include "cub3d.h"
+void raycasting(t_player *player, t_data *data, t_mlx *mlx) {
+    int x = 0;
+    while (x < S_W) {  // For each column on the screen
+        double cameraX = 2 * x / (double)S_W - 1; // Camera plane
+        double rayDirX = player->dirX + player->planeX * cameraX;
+        double rayDirY = player->dirY + player->planeY * cameraX;
 
-void init_game(t_game *game)
-{
-    // Initialize the MiniLibX library
-    game->mlx = mlx_init();
-    if (!game->mlx)
-        exit_with_error("Error\nFailed to initialize MLX.");
+        // Raycasting calculations (DDA algorithm)
+        int mapX = (int)player->player_x;
+        int mapY = (int)player->player_y;
 
-    // Load textures
-    load_textures(game);
-
-    // Initialize player position and direction
-    init_player(game);
+        // Calculate the distance and direction to the next wall...
+        // Detect hit...
+        // Render the correct texture slice...
+        x++;
+    }
 }
 
-6. Rendering the Scene (render.c)
+Action:
 
-The main rendering loop will:
+    Implement the DDA (Digital Differential Analyzer) algorithm to cast rays, detect walls, and calculate distances.
+    Use distance results to calculate wall height and display it accordingly.
+
+III. Rendering Walls and Floor/Ceiling
+
+    Objective: Draw walls, floors, and ceilings based on raycasting results.
+
+For rendering:
+
+    Wall: Height of each wall slice is inversely proportional to the distance to the wall (closer walls are taller, further ones are shorter).
+    Floor/Ceiling: Use the colors defined in the .cub file and fill the remaining space at the top (ceiling) and bottom (floor).
+
+Rendering Flow:
 
     Clear the screen.
-    Cast rays to determine what to draw.
-    Draw walls, ceiling, and floor based on the ray-casting results.
-    Handle input for player movement and view changes.
-
-Example render.c:
-
-c
-
-#include "cub3d.h"
-
-void render(t_game *game)
-{
-    // Clear the previous frame
-    mlx_clear_window(game->mlx, game->win);
-
-    // Ray-casting to render the scene
-    for (int x = 0; x < SCREEN_WIDTH; x++)
-        cast_ray(game, x);
-
-    // Display the frame
-    mlx_put_image_to_window(game->mlx, game->win, game->img, 0, 0);
-}
-
-7. Handling Input (input_handling.c)
-
-Handle keyboard input to move the player around the maze and look left or right.
-
-Example input_handling.c:
+    Cast rays for each vertical slice of the screen.
+    For each ray:
+        Compute the distance to the wall.
+        Calculate the corresponding texture.
+        Draw the wall slice using the correct texture.
+    Draw floor and ceiling.
 
 c
 
-#include "cub3d.h"
-
-int handle_keypress(int keycode, t_game *game)
-{
-    if (keycode == ESC_KEY)
-        exit_game(game);
-    else if (keycode == W_KEY)
-        move_forward(game);
-    else if (keycode == S_KEY)
-        move_backward(game);
-    else if (keycode == A_KEY)
-        move_left(game);
-    else if (keycode == D_KEY)
-        move_right(game);
-    else if (keycode == LEFT_ARROW)
-        rotate_left(game);
-    else if (keycode == RIGHT_ARROW)
-        rotate_right(game);
-
-    return (0);
+void draw_frame(t_data *data, t_player *player, t_mlx *mlx) {
+    raycasting(player, data, mlx);  // Cast rays and draw walls
+    // Fill the floor and ceiling
+    fill_ceiling(data, mlx); // Using the ceiling color
+    fill_floor(data, mlx); // Using the floor color
 }
 
-8. Using MiniLibX
+IV. Player Movement and Rotation
 
-MiniLibX provides the tools to create a window, handle events, and manipulate images:
+    Objective: Implement WASD controls for movement and left/right arrows for rotation.
 
-    Window Management: Create and manage the game window.
-    Image Handling: Create and manipulate images, which are essential for rendering textures.
-    Event Handling: Capture and respond to user input.
+Already Implemented:
 
-9. Testing & Debugging
+    Basic input handling.
 
-Regularly test your application with different .cub files to ensure that:
+Next Steps:
 
-    The map is parsed correctly.
-    The ray-casting renders the scene as expected.
-    User inputs are handled smoothly.
-    Errors are reported accurately.
+    Use WASD to move the player. This will update the player's position (player_x, player_y) based on the direction they are facing.
+    Use left and right arrow keys to rotate the player’s view (change player.angle).
+    Implement collision detection: prevent the player from walking through walls.
 
-10. Optimization
+c
 
-After getting everything to work, consider optimizing the code for performance, especially the ray-casting loop, as it can be resource-intensive.
-11. Bonus Features (Optional)
+void move_player(t_player *player, t_data *data) {
+    if (player->u_d == 1) {  // Move forward
+        player->player_x += cos(player->angle) * PLAYER_SPEED;
+        player->player_y += sin(player->angle) * PLAYER_SPEED;
+    }
+    if (player->u_d == -1) {  // Move backward
+        player->player_x -= cos(player->angle) * PLAYER_SPEED;
+        player->player_y -= sin(player->angle) * PLAYER_SPEED;
+    }
+    // Similar logic for left/right
+}
 
-If you have time, consider adding extra features like:
+void rotate_player(t_player *player, int direction) {
+    player->angle += direction * ROTATION_SPEED;
+}
 
-    Additional textures.
-    More complex map parsing with multiple levels.
-    A minimap.
-    Sound effects using an audio library.
+Action:
+
+    Update player movement and rotation with smooth transitions.
+    Handle collisions with walls.
+
+V. Error Handling
+
+    Objective: Ensure robust error handling for various scenarios.
+
+Make sure to handle:
+
+    Invalid map files: Maps not surrounded by walls, incorrect characters, or missing elements.
+    Memory leaks: Make sure all allocated memory (textures, map arrays, etc.) is freed before exiting.
+    Input validation: Ensure the .cub file is correctly formatted.
+
+c
+
+void validate_map(char **map) {
+    // Check if the map is surrounded by walls, has valid characters
+    // If any issue, exit with a proper error message
+}
+
+3. Bonus Features (Optional)
+
+Once the mandatory part is perfect, you can implement some bonus features:
+
+    Wall collisions: Already planned as part of player movement.
+    Minimap system: Display a 2D minimap that shows the player's position and nearby walls.
+    Doors: Add doors that can be opened and closed.
+    Mouse-based view rotation: Allow the player to rotate the view by moving the mouse.
+
+4. File Structure
+
+Organize your files for readability and scalability:
+
+scss
+
+cub3D/
+│
+├── includes/
+│   └── cub3d.h
+│
+├── srcs/
+│   ├── main.c
+│   ├── read_map.c
+│   ├── raycasting.c
+│   ├── rendering.c
+│   ├── controls.c
+│   ├── error_handling.c
+│
+├── Makefile
+├── sources/
+│   └── textures/ (your wall and floor textures)
+│
+└── maps/ (your .cub files)
+
+5. Next Steps
+
+    Finish parsing the .cub file (textures and colors).
+    Implement raycasting to detect wall collisions and distances.
+    Draw walls using the texture based on the player's direction.
+    Handle player movement and rotation smoothly.
+    Test and debug thoroughly to handle edge cases like incorrect map files or out-of-bounds movement.
+
+
+
+----------------RATCASTING-------------------
+
+    To implement raycasting in your project, you need to follow a well-structured approach. Raycasting is a technique that casts rays from the player's position, calculating where they intersect with walls in the 2D map, and then rendering those walls accordingly. Here’s a guide to help you get started:
+Raycasting Overview
+
+    The Player:
+        The player has a position (player_x, player_y) and a direction (the angle they are facing).
+        They also have a Field of View (FOV), typically 60 degrees.
+
+    The Rays:
+        For every vertical slice of your screen (each column of pixels), you will cast a ray from the player’s position.
+        The ray will move in increments until it hits a wall.
+        For each ray, calculate the distance from the player to the wall it hits, then use this distance to determine the height of the wall slice on screen.
+
+    Rendering:
+        Based on the distance of the wall from the player, you scale the wall height to create a 3D perspective.
+        Walls closer to the player will be drawn taller, and walls further away will be shorter.
+
+Step-by-Step Implementation
+1. Define Constants and Player Setup
+
+Add more constants to define the FOV, number of rays (based on screen width), and other necessary parameters.
+
+In cub3d.h, add:
+
+c
+
+#define FOV_ANGLE (M_PI / 3) // 60 degrees field of view
+#define NUM_RAYS S_W // One ray per vertical pixel column
+
+2. Initialize Raycasting in the Game Loop
+
+You’ll need to cast rays for every vertical slice of the screen. For this, you should add a function to cast rays and draw the resulting walls.
+Update your game_loop function:
+
+c
+
+void game_loop(t_data *data, t_mlx *mlx)
+{
+    mlx->mlx_p = mlx_init();
+    mlx->window = mlx_new_window(mlx->mlx_p, S_W, S_H, "Maze Runner");
+
+    while (1) // Infinite game loop for the rendering
+    {
+        cast_rays(data, mlx); // Cast rays to render 3D scene
+        mlx_key_hook(mlx->window, handle_input, mlx);
+        mlx_loop(mlx->mlx_p);
+    }
+}
+
+3. Casting Rays
+
+You’ll need to create a function that casts rays from the player and calculates the distance to walls. This function should loop through every vertical slice of the screen and cast a ray for each one.
+Add a cast_rays function:
+
+c
+
+void cast_rays(t_data *data, t_mlx *mlx)
+{
+    int x;
+    double ray_angle;
+    double ray_distance;
+
+    ray_angle = data->player.angle - (FOV_ANGLE / 2); // Start from the leftmost angle of the FOV
+
+    for (x = 0; x < NUM_RAYS; x++) 
+    {
+        ray_distance = cast_single_ray(ray_angle, data); // Calculate distance for this ray
+
+        render_wall_slice(x, ray_distance, data, mlx); // Render the wall slice based on ray distance
+
+        ray_angle += FOV_ANGLE / NUM_RAYS; // Increment angle for the next ray
+    }
+}
+
+4. Casting a Single Ray
+
+Now, you need to write a function to cast a single ray and find where it hits a wall. Use a "DDA" (Digital Differential Analyzer) algorithm to step through the map grid until the ray hits a wall.
+Add a cast_single_ray function:
+
+c
+
+double cast_single_ray(double ray_angle, t_data *data)
+{
+    double x_step, y_step;
+    double ray_x, ray_y;
+    double distance_to_wall = 0;
+
+    // Normalize the angle between 0 and 2*PI
+    if (ray_angle < 0) ray_angle += 2 * M_PI;
+    if (ray_angle > 2 * M_PI) ray_angle -= 2 * M_PI;
+
+    // Calculate the direction in which the ray is going to step
+    // X and Y step are based on angle
+    x_step = cos(ray_angle);
+    y_step = sin(ray_angle);
+
+    ray_x = data->player.player_x;
+    ray_y = data->player.player_y;
+
+    while (1)
+    {
+        ray_x += x_step; // Move the ray forward in X direction
+        ray_y += y_step; // Move the ray forward in Y direction
+
+        // Check if the ray has hit a wall (1 in the map)
+        if (data->map2d[(int)ray_y / TILE_SIZE][(int)ray_x / TILE_SIZE] == '1')
+        {
+            // Calculate distance to the wall
+            distance_to_wall = sqrt(pow(ray_x - data->player.player_x, 2) + pow(ray_y - data->player.player_y, 2));
+            break;
+        }
+    }
+
+    return distance_to_wall;
+}
+
+5. Rendering the Wall Slices
+
+Now, you need to render a wall slice based on the distance. The closer the wall, the taller the slice should be. You can use basic perspective calculations.
+Add a render_wall_slice function:
+
+c
+
+void render_wall_slice(int x, double distance, t_data *data, t_mlx *mlx)
+{
+    int wall_height;
+    int draw_start;
+    int draw_end;
+
+    // Correct the fish-eye effect by adjusting the distance with the player's angle
+    distance = distance * cos(data->player.angle - ray_angle);
+
+    // Calculate wall height based on distance
+    wall_height = (TILE_SIZE / distance) * (S_W / 2);
+
+    draw_start = (S_H / 2) - (wall_height / 2);
+    draw_end = draw_start + wall_height;
+
+    // Draw the wall slice (just a simple rectangle for now)
+    for (int y = draw_start; y < draw_end; y++)
+    {
+        mlx_pixel_put(mlx->mlx_p, mlx->window, x, y, 0xFFFFFF); // White walls for now
+    }
+}
+
+This will render simple white walls for each slice based on the raycast.
+Next Steps
+
+    Texturing Walls:
+        Once the walls are rendered, the next step will be to apply the textures (e.g., data->NO, data->SO) to the walls. You’ll have to figure out the correct x-coordinate on the texture depending on where the ray hit the wall.
+
+    Handle Key Input:
+        You need to update the player's movement based on the keyboard (WASD and arrow keys).
+
+    Optimization:
+        Raycasting is a simple but potentially slow technique, so optimizing it for performance as you add more features will be important.
 

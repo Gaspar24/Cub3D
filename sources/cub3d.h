@@ -12,57 +12,47 @@
 #include "../minilibx-linux/mlx_int.h"
 
 
+
+
 # define MAX_LINE_LENGTH 1000
 # define MAX_LINES 1000
-# define WIDTH 100
-# define HEIGHT 100
-# define X 0
-# define Y 1
-# define SIZE 50
+#define TILE_SIZE 5
 
+// # define S_W 1920 // Define screen width
+// # define S_H 1080 // Define screen height
 
-# define S_W 1920 // screen width
-# define S_H 1080 // screen height
-# define TILE_SIZE 30 // tile size
-# define FOV 60 // field of view
+#define FOV_ANGLE (M_PI / 3) // 60 degrees field of view
+#define NUM_RAYS S_W // One ray per vertical pixel column
 # define ROTATION_SPEED 0.045 // rotation speed
 # define PLAYER_SPEED 4	// player speed
 
-typedef struct s_player //the player structure
+typedef struct s_player
 {
-	int		plyr_x; // player x position in pixels
-	int		plyr_y; // player y position in pixels
-	double	angle;	// player angle
-	float	fov_rd;	// field of view in radians
-	int		rot;	// rotation flag
-	int		l_r;	// left right flag
-	int		u_d;	// up down flag
-}	t_player;
+    double player_x;  // Player's X position on the map
+    double player_y;  // Player's Y position on the map
+    double angle;     // Player's current facing direction (angle in radians)
+    double move_speed;
+    double turn_speed;
+}   t_player;
 
-typedef struct s_ray	//the ray structure
-{
-	double	ray_ngl;	// ray angle
-	double	distance;	// distance to the wall
-	int		flag;		// flag for the wall
-}	t_ray;
+typedef struct s_color {
+    int r;
+    int g;
+    int b;
+} t_color;
 
-typedef struct s_data	//the data structure
-{
-	char	**map2d;	// the map
-	char	*NO;
-	char	*SO;
-	char	*WE;
-	char	*EA;
-	int		p_x;		// player x position in the map
-	int		p_y;		// player y position in the map
-	int		w_map;		// map width
-	int		h_map;	// map height
-	/// c -color
-	/// f -color
+typedef struct s_data {
+    char    **map2d; 
+    char    *NO, *SO, *WE, *EA; // Texture paths (Already present)
+    t_color floor_color;
+    t_color ceiling_color;
+    int     player_x, player_y;
+    char    player_orientation;
 	void	*wall;
 	void	*floor;
+	t_player player; // Add the player structure here
 
-}	t_data;
+} t_data;
 
 typedef struct s_mlx	//the mlx structure
 {
@@ -70,25 +60,8 @@ typedef struct s_mlx	//the mlx structure
 	void			*window; // mlx window
 	void			*mlx_p;	// the mlx pointer
 
-
-
-	// t_ray			*ray;	// the ray structure
-	// t_data			*dt;	// the data structure
-	// t_player		*ply;	// the player structure
 }	t_mlx;
 
-/////////////test
-// typedef struct s_mlx {
-//     void    *mlx_p;
-//     void    *window;
-//     struct {
-//         void *img;
-//         char *addr;
-//         int bits_per_pixel;
-//         int line_length;
-//         int endian;
-//     } img;
-// } t_mlx;
 
 
 //----------------read_map------------------
@@ -100,12 +73,16 @@ char	*ft_strjoin(char *s1, char *s2);
 char	*ft_strcpy(char *dest, char *src);
 
 //----------put_texture-------
-void	draw_wall(t_data *data, int img_width, int img_height, t_mlx *mlx);
-void	draw_floor(t_data *data, int img_width, int img_height, t_mlx *mlx);
+// void	draw_wall(t_data *data, int img_width, int img_height, t_mlx *mlx);
+// void	draw_floor(t_data *data, int img_width, int img_height, t_mlx *mlx);
 
 //----------actions-------------
 int		handle_input(int keysym, t_mlx *mlx);
 void	close_window(t_mlx *mlx);
+
+
+//--------------raycasting------------
+// void cast_rays(t_data *data, t_mlx *mlx);
 
 
 
