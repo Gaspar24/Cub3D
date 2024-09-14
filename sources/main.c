@@ -6,19 +6,19 @@
 /*   By: msacaliu <msacaliu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/30 14:10:46 by msacaliu          #+#    #+#             */
-/*   Updated: 2024/09/14 15:11:40 by msacaliu         ###   ########.fr       */
+/*   Updated: 2024/09/14 17:34:49 by msacaliu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "cub3d.h"
 
-// void    startup(t_data *data, char *filename)
-// {
-//     char *full_path = ft_strjoin("./sources/maps/", filename);
-// 	full_path = ft_strjoin(full_path, ".cub");
-//     data->map2d = read_map(full_path, data);
+void    startup(t_data *data, char *filename)
+{
+    char *full_path = ft_strjoin("./sources/maps/", filename);
+	full_path = ft_strjoin(full_path, ".cub");
+    data->map2d = read_map(full_path, data);
 
-// }
+}
 
 
 // void    game_loop(t_data *data, t_mlx *mlx)
@@ -77,11 +77,13 @@ char map[MAP_HEIGHT][MAP_WIDTH + 1] = {
     "1000000000000001",
     "1000000000000001",
     "1000000000000001",
-    "1111111111111111"};
+    "1111111111111111"
+};
+
 float fplayerX = 10.0f;
 float fplayerY = 10.0f;
 float fplayerA = 0.0f;
-float fFOV = 3.14159 / 4.0;
+float fFOV = 3.14159 / 2.5; // 3 look good
 float depth = 16.0;
 
 void game_loop(t_data *data, t_mlx *mlx);
@@ -89,8 +91,8 @@ void redraw_image(t_mlx *mlx);
 
 void move_character()
 {
-    float moveSpeed = 0.1f;
-    float turnSpeed = 0.05f;
+    float moveSpeed = 0.2f;
+    float turnSpeed = 0.1f;
 
     float nextX = fplayerX;
     float nextY = fplayerY;
@@ -190,7 +192,7 @@ void redraw_image(t_mlx *mlx)
 
         while (!hit_wall && distance_to_wall < depth)
         {
-            distance_to_wall += 0.1f;
+            distance_to_wall += 0.05f; // it was 0.1
             int testX = (int)(fplayerX + eyeX * distance_to_wall);
             int testY = (int)(fplayerY + eyeY * distance_to_wall);
             if (testX < 0 || testX >= MAP_WIDTH || testY < 0 || testY >= MAP_HEIGHT)
