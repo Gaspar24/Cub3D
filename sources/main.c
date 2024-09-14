@@ -6,7 +6,7 @@
 /*   By: msacaliu <msacaliu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/30 14:10:46 by msacaliu          #+#    #+#             */
-/*   Updated: 2024/09/13 15:45:36 by msacaliu         ###   ########.fr       */
+/*   Updated: 2024/09/14 15:11:40 by msacaliu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,10 +51,15 @@
 
 ///test---------------
 
+#include "cub3d.h"
+
 #define MAP_WIDTH 16
 #define MAP_HEIGHT 16
-# define S_W 1280 // Define screen width
-# define S_H 720 // Define screen height
+#define S_W 1920    // Define screen width
+#define S_H 1080  // Define screen height
+
+// Define key states
+int key_states[4] = {0, 0, 0, 0}; // W, A, S, D keys states
 
 char map[MAP_HEIGHT][MAP_WIDTH + 1] = {
     "1111111111111111",
@@ -72,8 +77,7 @@ char map[MAP_HEIGHT][MAP_WIDTH + 1] = {
     "1000000000000001",
     "1000000000000001",
     "1000000000000001",
-    "1111111111111111"
-};
+    "1111111111111111"};
 float fplayerX = 10.0f;
 float fplayerY = 10.0f;
 float fplayerA = 0.0f;
@@ -81,46 +85,88 @@ float fFOV = 3.14159 / 4.0;
 float depth = 16.0;
 
 void game_loop(t_data *data, t_mlx *mlx);
-void    redraw_image(t_mlx *mlx);
+void redraw_image(t_mlx *mlx);
 
-
-void move_character(int keysym)
+void move_character()
 {
-    if (keysym == 'w')
+    float moveSpeed = 0.1f;
+    float turnSpeed = 0.05f;
+
+    float nextX = fplayerX;
+    float nextY = fplayerY;
+
+    // Move forward (W key)
+    if (key_states[0])
     {
-        fplayerX += cosf(fplayerA) * 0.2f;
-        fplayerY += sinf(fplayerA) * 0.2f;
+        nextX += cosf(fplayerA) * moveSpeed;
+        nextY += sinf(fplayerA) * moveSpeed;
     }
-    if (keysym == 's')
+    // Move backward (S key)
+    if (key_states[2])
     {
-        fplayerX -= cosf(fplayerA) * 0.2f;
-        fplayerY -= sinf(fplayerA) * 0.2f;
+        nextX -= cosf(fplayerA) * moveSpeed;
+        nextY -= sinf(fplayerA) * moveSpeed;
     }
-    if (keysym == 'a')
+    // Turn left (A key)
+    if (key_states[1])
     {
-        fplayerA -= 0.1f;
+        fplayerA -= turnSpeed;
     }
-    if (keysym == 'd')
+    // Turn right (D key)
+    if (key_states[3])
     {
-        fplayerA += 0.1f;
+        fplayerA += turnSpeed;
+    }
+
+    // Check for wall collision before updating position
+    if (map[(int)nextY][(int)nextX] != '1')
+    {
+        fplayerX = nextX;
+        fplayerY = nextY;
     }
 }
 
-int handle_input(int keysym, t_mlx *mlx)
+// Key press event handler
+int key_press(int keysym, t_mlx *mlx)
 {
     if (keysym == 65307) // Escape key
-    {
         close_window(mlx);
-    }
-    if (keysym == 'w' || keysym == 's' || keysym == 'a' || keysym == 'd')
-    {
-        move_character(keysym);
-        redraw_image(mlx);
-    }
+    if (keysym == 'w')
+        key_states[0] = 1; // W key
+    if (keysym == 'a')
+        key_states[1] = 1; // A key
+    if (keysym == 's')
+        key_states[2] = 1; // S key
+    if (keysym == 'd')
+        key_states[3] = 1; // D key
+
     return (0);
 }
 
-void    redraw_image(t_mlx *mlx)
+// Key release event handler
+int key_release(int keysym, t_mlx *mlx)
+{
+    if (keysym == 'w')
+        key_states[0] = 0; // W key
+    if (keysym == 'a')
+        key_states[1] = 0; // A key
+    if (keysym == 's')
+        key_states[2] = 0; // S key
+    if (keysym == 'd')
+        key_states[3] = 0; // D key
+
+    return (0);
+}
+
+// Update game frame continuously
+int update_game(t_mlx *mlx)
+{
+    move_character();
+    redraw_image(mlx);
+    return (0);
+}
+
+void redraw_image(t_mlx *mlx)
 {
     int img_width, img_height;
     void *wall_img = mlx_xpm_file_to_image(mlx->mlx_p, "./sources/textures/wall.xpm", &img_width, &img_height);
@@ -134,63 +180,44 @@ void    redraw_image(t_mlx *mlx)
     int bits_per_pixel, size_line, endian;
     char *wall_data = mlx_get_data_addr(wall_img, &bits_per_pixel, &size_line, &endian);
 
-    mlx_key_hook(mlx->window, handle_input, mlx);
-
     for (int x = 0; x < S_W; x++)
     {
-        // For each column calculate the projected ray angle 
         float ray_angle = (fplayerA - fFOV / 2.0f) + ((float)x / (float)S_W) * fFOV;
         float distance_to_wall = 0;
         bool hit_wall = false;
-        // Unit vector for ray in player pos
         float eyeX = sinf(ray_angle);
         float eyeY = cosf(ray_angle);
 
         while (!hit_wall && distance_to_wall < depth)
         {
             distance_to_wall += 0.1f;
-            
             int testX = (int)(fplayerX + eyeX * distance_to_wall);
             int testY = (int)(fplayerY + eyeY * distance_to_wall);
-            // Test if ray is out of bounds
             if (testX < 0 || testX >= MAP_WIDTH || testY < 0 || testY >= MAP_HEIGHT)
             {
                 hit_wall = true;
                 distance_to_wall = depth;
             }
-            else
+            else if (map[testY][testX] == '1')
             {
-                // Ray is in bounds so test to see if the ray cell is a wall
-                if (map[testY][testX] == '1')
-                {
-                    hit_wall = true;
-                }
+                hit_wall = true;
             }
         }
-        // Calculate distance to ceiling and floor
         int ceiling = (float)(S_H / 2.0) - S_H / (float)distance_to_wall;
         int floor = S_H - ceiling;
 
-        // Draw the column: ceiling, wall, floor
         for (int y = 0; y < S_H; y++)
         {
             if (y < ceiling)
-            {
-                // Draw ceiling (you can set it to a specific color, e.g., 0xCCCCCC for gray)
-                mlx_pixel_put(mlx->mlx_p, mlx->window, x, y, 0x00FF00);
-            } 
+                mlx_pixel_put(mlx->mlx_p, mlx->window, x, y, 0x00FF00); // Ceiling color
             else if (y >= ceiling && y <= floor)
             {
-                // Draw wall using the XPM image
                 int tex_y = (y - ceiling) * img_height / (floor - ceiling);
                 int color = *(int *)(wall_data + (tex_y * size_line + (x % img_width) * (bits_per_pixel / 8)));
                 mlx_pixel_put(mlx->mlx_p, mlx->window, x, y, color); // Wall color
             }
             else
-            {
-                // Draw floor (set a different color for the floor, e.g., 0x888888 for dark gray)
                 mlx_pixel_put(mlx->mlx_p, mlx->window, x, y, 0x888888); // Floor color
-            }
         }
     }
 }
@@ -201,88 +228,19 @@ void game_loop(t_data *data, t_mlx *mlx)
     mlx->mlx_p = mlx_init();
     mlx->window = mlx_new_window(mlx->mlx_p, S_W, S_H, "Maze Runner");
 
-    // Load the XPM image
-    int img_width, img_height;
-    void *wall_img = mlx_xpm_file_to_image(mlx->mlx_p, "./sources/textures/wall.xpm", &img_width, &img_height);
-    if (!wall_img)
-    {
-        fprintf(stderr, "Failed to load wall image\n");
-        return;
-    }
-
-    // Get the image data
-    int bits_per_pixel, size_line, endian;
-    char *wall_data = mlx_get_data_addr(wall_img, &bits_per_pixel, &size_line, &endian);
-
-    mlx_key_hook(mlx->window, handle_input, mlx);
-
-    for (int x = 0; x < S_W; x++)
-    {
-        // For each column calculate the projected ray angle 
-        float ray_angle = (fplayerA - fFOV / 2.0f) + ((float)x / (float)S_W) * fFOV;
-        float distance_to_wall = 0;
-        bool hit_wall = false;
-        // Unit vector for ray in player pos
-        float eyeX = sinf(ray_angle);
-        float eyeY = cosf(ray_angle);
-
-        while (!hit_wall && distance_to_wall < depth)
-        {
-            distance_to_wall += 0.1f;
-            
-            int testX = (int)(fplayerX + eyeX * distance_to_wall);
-            int testY = (int)(fplayerY + eyeY * distance_to_wall);
-            // Test if ray is out of bounds
-            if (testX < 0 || testX >= MAP_WIDTH || testY < 0 || testY >= MAP_HEIGHT)
-            {
-                hit_wall = true;
-                distance_to_wall = depth;
-            }
-            else
-            {
-                // Ray is in bounds so test to see if the ray cell is a wall
-                if (map[testY][testX] == '1')
-                {
-                    hit_wall = true;
-                }
-            }
-        }
-        // Calculate distance to ceiling and floor
-        int ceiling = (float)(S_H / 2.0) - S_H / (float)distance_to_wall;
-        int floor = S_H - ceiling;
-
-        // Draw the column: ceiling, wall, floor
-        for (int y = 0; y < S_H; y++)
-        {
-            if (y < ceiling)
-            {
-                // Draw ceiling (you can set it to a specific color, e.g., 0xCCCCCC for gray)
-                mlx_pixel_put(mlx->mlx_p, mlx->window, x, y, 0x00FF00);
-            } 
-            else if (y >= ceiling && y <= floor)
-            {
-                // Draw wall using the XPM image
-                int tex_y = (y - ceiling) * img_height / (floor - ceiling);
-                int color = *(int *)(wall_data + (tex_y * size_line + (x % img_width) * (bits_per_pixel / 8)));
-                mlx_pixel_put(mlx->mlx_p, mlx->window, x, y, color); // Wall color
-            }
-            else
-            {
-                // Draw floor (set a different color for the floor, e.g., 0x888888 for dark gray)
-                mlx_pixel_put(mlx->mlx_p, mlx->window, x, y, 0x888888); // Floor color
-            }
-        }
-    }
+    mlx_hook(mlx->window, 2, 1L << 0, key_press, mlx);    // Key press event
+    mlx_hook(mlx->window, 3, 1L << 1, key_release, mlx);  // Key release event
+    mlx_loop_hook(mlx->mlx_p, update_game, mlx);          // Continuous game update
     mlx_loop(mlx->mlx_p);
 }
 
 int main(int argc, char **argv)
 {
-    t_mlx    mlx;
+    t_mlx mlx;
     t_data data;
-    
+
     game_loop(&data, &mlx);
-    return(0);
+    return (0);
 }
 
 
